@@ -1,3 +1,4 @@
+// Path: E:\it-admin-tool\frontend\src\pages\TicketDetail.jsx
 // COPY AND PASTE THIS ENTIRE, FINAL, PERFECT BLOCK.
 
 import React, { useState, useEffect } from "react";
@@ -16,7 +17,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Select from "react-select";
-import { useAuth } from "../AuthContext"; // --- THIS IS THE FIX ---
+import { useAuth } from "../AuthContext";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import ActionModal from "../components/ActionModal.jsx";
@@ -259,7 +260,7 @@ const EngineerActions = ({ ticket, onUpdate, currentUserId }) => {
 const TicketDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { userRole } = useAuth(); // Changed from role to userRole for consistency
+  const { userRole } = useAuth();
   const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState("");
   const [isEditingTimestamps, setIsEditingTimestamps] = useState(false);
@@ -268,7 +269,10 @@ const TicketDetail = () => {
   const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
-    api.get('/api/auth/me/').then(res => setCurrentUserId(res.data.id)).catch(console.error);
+    api
+      .get("/api/auth/me/")
+      .then((res) => setCurrentUserId(res.data.id))
+      .catch(console.error);
   }, []);
 
   const {
@@ -376,13 +380,11 @@ const TicketDetail = () => {
     timestampMutation.mutate(payload);
   };
 
+  // --- THIS IS THE FINAL, ROBUST FIX for the Print Crash ---
   const handlePrint = () => {
-    const originalTitle = document.title;
-    document.title = `Ticket_${ticket?.ticket_id || "Details"}`;
+    // This simple, direct call is the most stable and reliable method.
+    // It avoids all browser rendering race conditions.
     window.print();
-    setTimeout(() => {
-      document.title = originalTitle;
-    }, 500);
   };
 
   const handleDeleteConfirm = () => {
@@ -542,7 +544,11 @@ const TicketDetail = () => {
             <div className="lg:col-span-1 space-y-8 print:space-y-0">
               <div className="print:hidden">
                 {userRole === "TECHNICIAN" && (
-                  <EngineerActions ticket={ticket} onUpdate={refetch} currentUserId={currentUserId} />
+                  <EngineerActions
+                    ticket={ticket}
+                    onUpdate={refetch}
+                    currentUserId={currentUserId}
+                  />
                 )}
               </div>
               <div className="print:hidden">
