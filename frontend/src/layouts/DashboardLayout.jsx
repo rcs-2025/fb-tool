@@ -24,12 +24,13 @@ import { REFRESH_TOKEN } from "../constants";
 
 const SessionTimeoutModal = ({ isOpen, onStay, onLogout, countdown }) => {
   if (!isOpen) return null;
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
       <div className="bg-white rounded-lg shadow-xl p-8 max-w-sm w-full text-center">
         <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500" />
-        <h2 className="mt-4 text-2xl font-bold text-gray-800">Session Expiring</h2>
+        <h2 className="mt-4 text-2xl font-bold text-gray-800">
+          Session Expiring
+        </h2>
         <p className="mt-2 text-gray-600">
           You have been inactive. You will be logged out automatically in{" "}
           <span className="font-bold">{countdown}</span> seconds.
@@ -56,42 +57,31 @@ const SessionTimeoutModal = ({ isOpen, onStay, onLogout, countdown }) => {
 const useIdleTimer = ({ timeout, warningTimeout, onIdle, onWarning }) => {
   const logoutTimer = useRef();
   const warningTimer = useRef();
-
   const resetTimers = useCallback(() => {
     if (warningTimer.current) clearTimeout(warningTimer.current);
     if (logoutTimer.current) clearTimeout(logoutTimer.current);
-
-    warningTimer.current = setTimeout(() => {
-      onWarning(true);
-    }, warningTimeout);
-
-    logoutTimer.current = setTimeout(() => {
-      onIdle();
-    }, timeout);
+    warningTimer.current = setTimeout(() => onWarning(true), warningTimeout);
+    logoutTimer.current = setTimeout(onIdle, timeout);
   }, [timeout, warningTimeout, onIdle, onWarning]);
-
   useEffect(() => {
-    const events = ["mousemove", "mousedown", "keypress", "touchstart", "scroll"];
-    
-    const handleActivity = () => {
-      resetTimers();
-    };
-
-    events.forEach((event) => {
-      window.addEventListener(event, handleActivity);
-    });
-
+    const events = [
+      "mousemove",
+      "mousedown",
+      "keypress",
+      "touchstart",
+      "scroll",
+    ];
+    const handleActivity = () => resetTimers();
+    events.forEach((event) => window.addEventListener(event, handleActivity));
     resetTimers();
-
     return () => {
-      events.forEach((event) => {
-        window.removeEventListener(event, handleActivity);
-      });
+      events.forEach((event) =>
+        window.removeEventListener(event, handleActivity)
+      );
       clearTimeout(warningTimer.current);
       clearTimeout(logoutTimer.current);
     };
   }, [resetTimers]);
-
   return { resetTimers };
 };
 
@@ -138,9 +128,10 @@ const DashboardLayout = ({
   const [countdown, setCountdown] = useState(120);
   const countdownTimer = useRef();
 
-  // --- THIS IS THE FINAL FIX ---
+  // --- THIS IS THE MOBILE RESPONSIVE FIX ---
+  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const handleLogout = useCallback(async () => {
-    // 1. Set up the local cleanup function to run regardless of API success/failure.
     const finalCleanup = () => {
       setWarningModalOpen(false);
       clearInterval(countdownTimer.current);
@@ -149,28 +140,26 @@ const DashboardLayout = ({
       navigate("/login");
       toast.success("You have been logged out.");
     };
-
     const refreshToken = localStorage.getItem(REFRESH_TOKEN);
     try {
-      // 2. AWAIT the API call to ensure it completes before we continue.
-      if (refreshToken) {
+      if (refreshToken)
         await api.post("/api/auth/logout/", { refresh_token: refreshToken });
-      }
     } catch (error) {
-      console.error("Logout API call failed, but logging out locally anyway.", error);
+      console.error(
+        "Logout API call failed, but logging out locally anyway.",
+        error
+      );
     } finally {
-      // 3. Run the cleanup function.
       finalCleanup();
     }
   }, [logout, navigate, queryClient]);
-  
+
   const { resetTimers } = useIdleTimer({
     timeout: 30 * 60 * 1000,
     warningTimeout: 28 * 60 * 1000,
     onIdle: handleLogout,
     onWarning: setWarningModalOpen,
   });
-
   const handleStayLoggedIn = () => {
     setWarningModalOpen(false);
     clearInterval(countdownTimer.current);
@@ -181,20 +170,13 @@ const DashboardLayout = ({
     if (isWarningModalOpen) {
       setCountdown(120);
       countdownTimer.current = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(countdownTimer.current);
-            return 0;
-          }
-          return prev - 1;
-        });
+        setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
       }, 1000);
     } else {
       clearInterval(countdownTimer.current);
     }
     return () => clearInterval(countdownTimer.current);
   }, [isWarningModalOpen]);
-
 
   const getHomeDashboardUrl = () => {
     switch (userRole) {
@@ -212,11 +194,25 @@ const DashboardLayout = ({
 
   return (
     <>
-      <div className="flex h-screen bg-slate-100 font-sans">
+      <div className="flex h-screen bg-slate-100 font-sans overflow-hidden">
+        {/* --- MOBILE OVERLAY --- */}
+        {isMobileMenuOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
+
+        {/* --- SIDEBAR --- */}
         <aside
-          className={`bg-white border-r border-slate-200 text-slate-800 flex flex-col transition-all duration-300 ease-in-out ${
-            isSidebarCollapsed ? "w-20" : "w-64"
-          }`}
+          className={`
+            bg-white border-r border-slate-200 text-slate-800 flex flex-col
+            fixed inset-y-0 left-0 z-30
+            transform transition-transform duration-300 ease-in-out
+            md:relative md:translate-x-0
+            ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
+            ${isSidebarCollapsed ? "w-20" : "w-64"}
+          `}
         >
           <div className="h-20 flex items-center justify-center p-4 border-b border-slate-200 shrink-0">
             {isSidebarCollapsed ? (
@@ -329,14 +325,25 @@ const DashboardLayout = ({
           <header className="bg-white shadow-sm z-10">
             <div className="max-w-full mx-auto px-6 lg:px-8 py-5 flex justify-between items-center">
               <div className="flex items-center">
+                {/* --- RESPONSIVE HAMBURGER MENU BUTTON --- */}
+                <button
+                  onClick={() => setMobileMenuOpen(true)}
+                  className="p-2 rounded-full text-slate-500 hover:bg-slate-200 md:hidden mr-4"
+                  aria-label="Open sidebar"
+                >
+                  <Menu size={24} />
+                </button>
+                {/* --- DESKTOP COLLAPSE BUTTON --- */}
                 <button
                   onClick={() => setSidebarCollapsed(!isSidebarCollapsed)}
-                  className="p-2 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 mr-4"
+                  className="p-2 rounded-full text-slate-500 hover:bg-slate-200 hidden md:block mr-4"
                   aria-label="Toggle sidebar"
                 >
                   {isSidebarCollapsed ? <Menu size={24} /> : <X size={24} />}
                 </button>
-                <h1 className="text-2xl font-bold text-gray-800">{pageTitle}</h1>
+                <h1 className="text-2xl font-bold text-gray-800">
+                  {pageTitle}
+                </h1>
               </div>
               <div className="flex items-center space-x-4">
                 {headerActions}

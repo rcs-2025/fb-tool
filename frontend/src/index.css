@@ -1,3 +1,4 @@
+/* Path: E:\it-admin-tool\frontend\src\index.css */
 /* COPY AND PASTE THIS ENTIRE, FINAL, PERFECT BLOCK. */
 
 @tailwind base;
@@ -67,18 +68,23 @@
     margin-bottom: 2rem;
   }
   .print-header-logo {
-    height: 3rem; /* 48px */
+    height: 3rem;
     width: auto;
   }
   .print-header-title {
-    font-size: 1.875rem; /* 30px */
-    line-height: 2.25rem; /* 36px */
+    font-size: 1.875rem;
+    line-height: 2.25rem;
     font-weight: 700;
   }
   .print-header-date {
-    font-size: 0.875rem; /* 14px */
-    line-height: 1.25rem; /* 20px */
+    font-size: 0.875rem;
+    line-height: 1.25rem;
     color: #4b5563;
     text-align: right;
   }
+  /* --- THIS IS THE FIX: The extra closing brace has been removed --- */
+}
+
+html {
+  font-size: 13px;
 }
